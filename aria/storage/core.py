@@ -39,7 +39,6 @@ API:
 """
 
 from aria.logger import LoggerMixin
-from . import api as storage_api
 
 __all__ = (
     'Storage',
@@ -105,7 +104,7 @@ class ModelStorage(Storage):
         :param model_cls: the model to register.
         :return:
         """
-        model_name = storage_api.generate_lower_name(model_cls)
+        model_name = model_cls.__modelname__
         if model_name in self.registered:
             self.logger.debug('{name} in already storage {self!r}'.format(name=model_name,
                                                                           self=self))

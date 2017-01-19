@@ -14,8 +14,8 @@
 # limitations under the License.
 import os
 import platform
-from tempfile import mkdtemp
 from shutil import rmtree
+from tempfile import mkdtemp
 
 from sqlalchemy import (
     create_engine,
@@ -29,18 +29,18 @@ from sqlalchemy import (
 
 from aria.storage import (
     model,
-    structure,
     type as aria_type,
+    structure,
+    modeling
 )
 
 
-class MockModel(model.DeclarativeBase, structure.ModelMixin): #pylint: disable=abstract-method
-    __tablename__ = 'mock_models'
+class MockModel(model.DB, structure.ModelMixin): #pylint: disable=abstract-method
+    __tablename__ = 'mock_model'
     model_dict = Column(aria_type.Dict)
     model_list = Column(aria_type.List)
     value = Column(Integer)
     name = Column(Text)
-
 
 
 class TestFileSystem(object):
@@ -52,7 +52,8 @@ class TestFileSystem(object):
         rmtree(self.path, ignore_errors=True)
 
 
-def get_sqlite_api_kwargs(base_dir=None, filename='db.sqlite'):
+def get_sqlite_api_kwargs(base_dir=None,
+                          filename='db.sqlite'):
     """
     Create sql params. works in in-memory and in filesystem mode.
     If base_dir is passed, the mode will be filesystem mode. while the default mode is in-memory.
@@ -77,7 +78,7 @@ def get_sqlite_api_kwargs(base_dir=None, filename='db.sqlite'):
     session_factory = orm.sessionmaker(bind=engine)
     session = orm.scoped_session(session_factory=session_factory) if base_dir else session_factory()
 
-    model.DeclarativeBase.metadata.create_all(bind=engine)
+    modeling.declarative_base.metadata.create_all(bind=engine)
     return dict(engine=engine, session=session)
 
 
@@ -94,4 +95,4 @@ def release_sqlite_storage(storage):
             session.rollback()
             session.close()
         for engine in set(mapi._engine for mapi in mapis):
-            model.DeclarativeBase.metadata.drop_all(engine)
+            modeling.declarative_base.metadata.drop_all(engine)
