@@ -15,11 +15,15 @@
 
 import copy
 
+import sqlalchemy
 import sqlalchemy.event
 
+from . import exceptions
 from . import api
 from . import model as _model
 
+
+_VERSION_ID_COL = 'version_id'
 _STUB = object()
 _INSTRUMENTED = {
     _model.NodeInstance.runtime_properties: dict
@@ -93,6 +97,11 @@ class _Instrumentation(object):
             mapi_name = self._mapi_name(instrumented_class)
             tracked_instances = self.tracked_changes.setdefault(mapi_name, {})
             tracked_attributes = tracked_instances.setdefault(target.id, {})
+            if hasattr(target, _VERSION_ID_COL):
+                # We want to keep track of the initial version id so it can be compared
+                # with the committed version id when the tracked changes are applied
+                tracked_attributes.setdefault(_VERSION_ID_COL,
+                                              _Value(_STUB, getattr(target, _VERSION_ID_COL)))
             for attribute_name, attribute_type in instrumented_attributes.items():
                 if attribute_name not in tracked_attributes:
                     initial = getattr(target, attribute_name)
@@ -148,7 +157,7 @@ class _Value(object):
         return self.initial == other.initial and self.current == other.current
 
     def __hash__(self):
-        return hash(self.initial) ^ hash(self.current)
+        return hash((self.initial, self.current))
 
 
 def apply_tracked_changes(tracked_changes, model):
@@ -168,4 +177,23 @@ def apply_tracked_changes(tracked_changes, model):
                         instance = mapi.get(instance_id)
                     setattr(instance, attribute_name, value.current)
             if instance:
+                _validate_version_id(instance, mapi)
                 mapi.update(instance)
+
+
+def _validate_version_id(instance, mapi):
+    version_id = sqlalchemy.inspect(instance).committed_state.get(_VERSION_ID_COL)
+    # There are two version conflict code paths:
+    # 1. The instance committed state loaded already holds a newer version,
+    #    in this case, we manually raise the error
+    # 2. The UPDATE statement is executed with version validation and sqlalchemy
+    #    will raise a StateDataError if there is a version mismatch.
+    if version_id and getattr(instance, _VERSION_ID_COL) != version_id:
+        object_version_id = getattr(instance, _VERSION_ID_COL)
+        mapi._session.rollback()
+        raise exceptions.StorageError(
+            'Version conflict: committed and object {0} differ '
+            '[committed {0}={1}, object {0}={2}]'
+            .format(_VERSION_ID_COL,
+                    version_id,
+                    object_version_id))

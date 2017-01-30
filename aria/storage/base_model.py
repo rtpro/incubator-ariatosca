@@ -479,6 +479,7 @@ class NodeInstanceBase(ModelMixin):
     __tablename__ = 'node_instances'
     _private_fields = ['node_fk', 'host_fk']
 
+    version_id = Column(Integer, nullable=False)
     runtime_properties = Column(Dict)
     scaling_groups = Column(List)
     state = Column(Text, nullable=False)
@@ -527,6 +528,8 @@ class NodeInstanceBase(ModelMixin):
         if 'ip' in host_node.properties:
             return host_node.properties['ip']
         return None
+
+    __mapper_args__ = {'version_id_col': version_id}
 
 
 class RelationshipInstanceBase(ModelMixin):

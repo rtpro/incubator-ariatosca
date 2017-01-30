@@ -17,6 +17,7 @@ SQLAlchemy based MAPI
 """
 
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm.exc import StaleDataError
 
 from aria.utils.collections import OrderedDict
 from aria.storage import (
@@ -152,6 +153,9 @@ class SQLAlchemyModelAPI(api.ModelAPI):
         """
         try:
             self._session.commit()
+        except StaleDataError as e:
+            self._session.rollback()
+            raise exceptions.StorageError('Version conflict: {0}'.format(str(e)))
         except (SQLAlchemyError, ValueError) as e:
             self._session.rollback()
             raise exceptions.StorageError('SQL Storage error: {0}'.format(str(e)))
