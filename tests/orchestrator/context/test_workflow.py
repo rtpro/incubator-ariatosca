@@ -61,7 +61,7 @@ class TestWorkflowContext(object):
 @pytest.fixture(scope='function')
 def storage():
     api_kwargs = test_storage.get_sqlite_api_kwargs()
-    workflow_storage = application_model_storage(SQLAlchemyModelAPI, api_kwargs=api_kwargs)
+    workflow_storage = application_model_storage(SQLAlchemyModelAPI, driver_kwargs=api_kwargs)
     workflow_storage.blueprint.put(models.get_blueprint())
     blueprint = workflow_storage.blueprint.get_by_name(models.BLUEPRINT_NAME)
     workflow_storage.deployment.put(models.get_deployment(blueprint))

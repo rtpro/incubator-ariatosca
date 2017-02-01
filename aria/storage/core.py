@@ -52,10 +52,10 @@ class Storage(LoggerMixin):
     """
     Represents the storage
     """
-    def __init__(self, api_cls, api_kwargs=None, items=(), **kwargs):
+    def __init__(self, api_cls, driver_kwargs=None, items=(), **kwargs):
         super(Storage, self).__init__(**kwargs)
         self.api = api_cls
-        self._api_kwargs = api_kwargs or {}
+        self._driver_kwargs = driver_kwargs or {}
         self.registered = {}
         for item in items:
             self.register(item)
@@ -90,7 +90,7 @@ class ResourceStorage(Storage):
         :param name:
         :return:
         """
-        self.registered[name] = self.api(name=name, **self._api_kwargs)
+        self.registered[name] = self.api(name=name, **self._driver_kwargs)
         self.registered[name].create()
         self.logger.debug('setup {name} in storage {self!r}'.format(name=name, self=self))
 
@@ -112,7 +112,7 @@ class ModelStorage(Storage):
             return
         self.registered[model_name] = self.api(name=model_name,
                                                model_cls=model_cls,
-                                               **self._api_kwargs)
+                                               **self._driver_kwargs)
         self.registered[model_name].create()
         self.logger.debug('setup {name} in storage {self!r}'.format(name=model_name, self=self))
 

@@ -13,9 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sqlalchemy.orm
-import sqlalchemy.pool
-
 import aria
 
 
@@ -32,7 +29,7 @@ def operation_context_to_dict(context):
         model = context.model
         context_dict['model_storage'] = {
             'api_cls': model.api,
-            'api_kwargs': _serialize_sql_mapi_kwargs(model)
+            'driver_kwargs': model._driver_kwargs,
         }
     else:
         context_dict['model_storage'] = None
@@ -40,7 +37,7 @@ def operation_context_to_dict(context):
         resource = context.resource
         context_dict['resource_storage'] = {
             'api_cls': resource.api,
-            'api_kwargs': _serialize_file_rapi_kwargs(resource)
+            'driver_kwargs': resource._driver_kwargs
         }
     else:
         context_dict['resource_storage'] = None
@@ -57,39 +54,15 @@ def operation_context_from_dict(context_dict):
     model_storage = context['model_storage']
     if model_storage:
         api_cls = model_storage['api_cls']
-        api_kwargs = _deserialize_sql_mapi_kwargs(model_storage.get('api_kwargs', {}))
-        context['model_storage'] = aria.application_model_storage(api=api_cls,
-                                                                  api_kwargs=api_kwargs)
+        driver_kwargs = model_storage['driver_kwargs']
+        context['model_storage'] = aria.application_model_storage(
+            api_cls, driver_kwargs=driver_kwargs)
 
     resource_storage = context['resource_storage']
     if resource_storage:
         api_cls = resource_storage['api_cls']
-        api_kwargs = _deserialize_file_rapi_kwargs(resource_storage.get('api_kwargs', {}))
-        context['resource_storage'] = aria.application_resource_storage(api=api_cls,
-                                                                        api_kwargs=api_kwargs)
+        driver_kwargs = resource_storage['driver_kwargs']
+        context['resource_storage'] = aria.application_resource_storage(
+             api=api_cls, driver_kwargs=driver_kwargs)
 
     return context_cls(**context)
-
-
-def _serialize_sql_mapi_kwargs(model):
-    engine_url = str(model._api_kwargs['engine'].url)
-    assert ':memory:' not in engine_url
-    return {'engine_url': engine_url}
-
-
-def _deserialize_sql_mapi_kwargs(api_kwargs):
-    engine_url = api_kwargs.get('engine_url')
-    if not engine_url:
-        return {}
-    engine = sqlalchemy.create_engine(engine_url)
-    session_factory = sqlalchemy.orm.sessionmaker(bind=engine)
-    session = sqlalchemy.orm.scoped_session(session_factory=session_factory)
-    return {'session': session, 'engine': engine}
-
-
-def _serialize_file_rapi_kwargs(resource):
-    return {'directory': resource._api_kwargs['directory']}
-
-
-def _deserialize_file_rapi_kwargs(api_kwargs):
-    return api_kwargs

@@ -55,7 +55,7 @@ def sql_storage(storage_func):
 
 def _empty_storage():
     return application_model_storage(sql_mapi.SQLAlchemyModelAPI,
-                                     api_kwargs=get_sqlite_api_kwargs())
+                                     driver_kwargs=get_sqlite_api_kwargs())
 
 
 def _blueprint_storage():

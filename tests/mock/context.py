@@ -22,19 +22,14 @@ from . import models
 from .topology import create_simple_topology_two_nodes
 
 
-def simple(mapi_kwargs, resources_dir=None, **kwargs):
-    model_storage = aria.application_model_storage(SQLAlchemyModelAPI, api_kwargs=mapi_kwargs)
+def simple(model_driver_kwargs=None, resources_driver_kwargs=None, context_kwargs=None):
+    model_storage = aria.application_model_storage(
+        SQLAlchemyModelAPI, driver_kwargs=model_driver_kwargs or {})
+
+    resource_storage = aria.application_resource_storage(
+        FileSystemResourceAPI, driver_kwargs=resources_driver_kwargs or {})
 
     deployment_id = create_simple_topology_two_nodes(model_storage)
-
-    # pytest tmpdir
-    if resources_dir:
-        resource_storage = aria.application_resource_storage(
-            FileSystemResourceAPI,
-            api_kwargs={'directory': resources_dir}
-        )
-    else:
-        resource_storage = None
 
     final_kwargs = dict(
         name='simple_context',
@@ -45,5 +40,5 @@ def simple(mapi_kwargs, resources_dir=None, **kwargs):
         task_max_attempts=models.TASK_MAX_ATTEMPTS,
         task_retry_interval=models.TASK_RETRY_INTERVAL
     )
-    final_kwargs.update(kwargs)
+    final_kwargs.update(context_kwargs or {})
     return context.workflow.WorkflowContext(**final_kwargs)

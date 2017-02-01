@@ -120,7 +120,7 @@ class Runner(object):
         sqlite_kwargs = dict(engine=sqlite_engine, session=sqlite_session)
         return application_model_storage(
             SQLAlchemyModelAPI,
-            api_kwargs=sqlite_kwargs)
+            driver_kwargs=sqlite_kwargs)
 
     def create_fs_resource_storage(self, directory='.'): # pylint: disable=no-self-use
         fs_kwargs = dict(directory=directory)

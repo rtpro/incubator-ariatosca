@@ -505,7 +505,7 @@ if __name__ == '__main__':
     def workflow_context(self, tmpdir):
         workflow_context = mock.context.simple(
             storage.get_sqlite_api_kwargs(str(tmpdir)),
-            resources_dir=str(tmpdir.join('resources')))
+            resources_driver_kwargs=str(tmpdir.join('resources')))
         workflow_context.states = []
         workflow_context.exception = None
         yield workflow_context

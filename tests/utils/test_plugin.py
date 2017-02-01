@@ -50,7 +50,7 @@ class TestPluginManager(object):
 @pytest.fixture
 def model():
     api_kwargs = storage.get_sqlite_api_kwargs()
-    model = application_model_storage(SQLAlchemyModelAPI, api_kwargs=api_kwargs)
+    model = application_model_storage(SQLAlchemyModelAPI, driver_kwargs=api_kwargs)
     yield model
     storage.release_sqlite_storage(model)
 

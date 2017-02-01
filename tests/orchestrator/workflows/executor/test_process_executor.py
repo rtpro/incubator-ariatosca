@@ -75,7 +75,7 @@ class TestProcessExecutor(object):
 @pytest.fixture
 def model(tmpdir):
     api_kwargs = tests.storage.get_sqlite_api_kwargs(str(tmpdir))
-    result = application_model_storage(SQLAlchemyModelAPI, api_kwargs=api_kwargs)
+    result = application_model_storage(SQLAlchemyModelAPI, driver_kwargs=api_kwargs)
     yield result
     tests.storage.release_sqlite_storage(result)
 

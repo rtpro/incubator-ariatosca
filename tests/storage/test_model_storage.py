@@ -61,7 +61,7 @@ def test_model_storage(storage):
 
 def test_application_storage_factory():
     storage = application_model_storage(sql_mapi.SQLAlchemyModelAPI,
-                                        api_kwargs=get_sqlite_api_kwargs())
+                                        driver_kwargs=get_sqlite_api_kwargs())
     assert storage.node
     assert storage.node_instance
     assert storage.plugin

@@ -15,7 +15,13 @@
 """
 SQLAlchemy based MAPI
 """
+import os
+import platform
+from functools import partial
 
+from sqlalchemy import create_engine
+from sqlalchemy import orm
+from sqlalchemy import pool
 from sqlalchemy.exc import SQLAlchemyError
 
 from aria.utils.collections import OrderedDict
@@ -25,11 +31,47 @@ from aria.storage import (
 )
 
 
+def init_storage(init_func=None):
+    if init_func is None:
+        return partial(init_storage, func=init_storage)
+
+    track = {
+        'engine': None,
+        'session': None
+    }
+
+    def _wrapper(self, base_dir=None, filename='db.sqlite', *args, **kwargs):
+        if not (track['engine'] and track['session']):
+            if base_dir is not None:
+                uri = 'sqlite:///{platform_char}{path}'.format(
+                    # Handles the windows behavior where there is not root, but drivers.
+                    # Thus behaving as relative path.
+                    platform_char='' if 'Windows' in platform.system() else '/',
+
+                    path=os.path.join(base_dir, filename))
+                engine_kwargs = {}
+            else:
+                uri = 'sqlite:///:memory:'
+                engine_kwargs = dict(connect_args={'check_same_thread': False},
+                                     poolclass=pool.StaticPool)
+
+            track['engine'] = create_engine(uri, **engine_kwargs)
+            session_factory = orm.sessionmaker(bind=track['engine'])
+            track['session'] = orm.scoped_session(session_factory=session_factory) if base_dir else \
+                session_factory()
+
+        return init_func(
+            self=self, engine=track['engine'], session=track['session'], *args, **kwargs)
+
+    return _wrapper
+
+
 class SQLAlchemyModelAPI(api.ModelAPI):
     """
     SQL based MAPI.
     """
 
+    @init_storage
     def __init__(self,
                  engine,
                  session,

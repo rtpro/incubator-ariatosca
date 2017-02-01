@@ -57,7 +57,7 @@ def install_aria_extensions():
     extension.init()
 
 
-def application_model_storage(api, api_kwargs=None):
+def application_model_storage(api, driver_kwargs=None):
     """
     Initiate model storage
     """
@@ -79,18 +79,12 @@ def application_model_storage(api, api_kwargs=None):
         storage.model.Task,
     ]
     # if api not in _model_storage:
-    return storage.ModelStorage(api, items=models, api_kwargs=api_kwargs or {})
+    return storage.ModelStorage(api, items=models, driver_kwargs=driver_kwargs or {})
 
 
-def application_resource_storage(api, api_kwargs=None):
+def application_resource_storage(api, driver_kwargs=None):
     """
     Initiate resource storage
     """
     return storage.ResourceStorage(
-        api,
-        api_kwargs=api_kwargs or {},
-        items=[
-            'blueprint',
-            'deployment',
-            'plugin',
-        ])
+        api, driver_kwargs=driver_kwargs or {}, items=['blueprint', 'deployment', 'plugin', ])
