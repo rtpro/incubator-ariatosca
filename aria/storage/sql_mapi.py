@@ -31,47 +31,12 @@ from aria.storage import (
 )
 
 
-def init_storage(init_func=None):
-    if init_func is None:
-        return partial(init_storage, func=init_storage)
-
-    track = {
-        'engine': None,
-        'session': None
-    }
-
-    def _wrapper(self, base_dir=None, filename='db.sqlite', *args, **kwargs):
-        if not (track['engine'] and track['session']):
-            if base_dir is not None:
-                uri = 'sqlite:///{platform_char}{path}'.format(
-                    # Handles the windows behavior where there is not root, but drivers.
-                    # Thus behaving as relative path.
-                    platform_char='' if 'Windows' in platform.system() else '/',
-
-                    path=os.path.join(base_dir, filename))
-                engine_kwargs = {}
-            else:
-                uri = 'sqlite:///:memory:'
-                engine_kwargs = dict(connect_args={'check_same_thread': False},
-                                     poolclass=pool.StaticPool)
-
-            track['engine'] = create_engine(uri, **engine_kwargs)
-            session_factory = orm.sessionmaker(bind=track['engine'])
-            track['session'] = orm.scoped_session(session_factory=session_factory) if base_dir else \
-                session_factory()
-
-        return init_func(
-            self=self, engine=track['engine'], session=track['session'], *args, **kwargs)
-
-    return _wrapper
-
 
 class SQLAlchemyModelAPI(api.ModelAPI):
     """
     SQL based MAPI.
     """
 
-    @init_storage
     def __init__(self,
                  engine,
                  session,
@@ -404,6 +369,36 @@ class SQLAlchemyModelAPI(api.ModelAPI):
         """
         for rel in instance.__mapper__.relationships:
             getattr(instance, rel.key)
+
+
+def register_initiator(func, cls=None):
+    cls.__metadata__ = type('{0}Metaclas'.format(cls.__name__),
+                            (type, ),
+                            dict(__call__=func))
+
+
+@register_initiator(cls=SQLAlchemyModelAPI)
+def init_storage(cls, base_dir=None, filename='db.sqlite', *args, **kwargs):
+        if not hasattr(cls, '_engine'):
+            if base_dir is not None:
+                uri = 'sqlite:///{platform_char}{path}'.format(
+                    # Handles the windows behavior where there is not root, but drivers.
+                    # Thus behaving as relative path.
+                    platform_char='' if 'Windows' in platform.system() else '/',
+
+                    path=os.path.join(base_dir, filename))
+                engine_kwargs = {}
+            else:
+                uri = 'sqlite:///:memory:'
+                engine_kwargs = dict(connect_args={'check_same_thread': False},
+                                     poolclass=pool.StaticPool)
+
+            cls._engine = create_engine(uri, **engine_kwargs)
+            session_factory = orm.sessionmaker(bind=cls._engine)
+            cls._session = orm.scoped_session(session_factory=session_factory) if base_dir else \
+                session_factory()
+
+        return type.__call__(cls, engine=cls._engine, session=cls._session, *args, **kwargs)
 
 
 class ListResult(object):
