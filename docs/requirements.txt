@@ -10,5 +10,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-Sphinx==1.5b1
+Sphinx==3.0.4
 sphinx_rtd_theme==0.1.10a0
